@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en-UK">
+
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+
+	<head>
+		<!-- Include any of the Javascrupt libraries -->
+		<script type="text/javascript" src="js/jquery-1.11.3.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.11.4.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.10.0.min.js"></script>
+		<script type="text/javascript" src="js/jquery.jtable.min.js"></script>
+		<script type="text/javascript" src="js/customDateFormat.js"></script>
+		
+		<!-- Include any of the CSS  -->
+		<link type="text/css" rel="stylesheet" href="css/stylesheet.css"/>
+		<link type="text/css" rel="stylesheet" href="css/themes/metro/blue/jtable.css"/>
+		<link type="text/css" rel="stylesheet" href="css/themes/metro/lightgray/jtable.css"/>
+		
+	</head>
+	
+	<title>Transaction Page</title>
+	
+	<body>
+	
+	<table>
+		<tr>
+			<td >
+				<div >
+					<h2 class="topBanner" style="border:2px solid orange; text-align:center; width:250px;">MONESE APP</h2>
+				</div>
+			</td>
+		</tr>
+		<tr>
+			<td>
+				
+				<table id="mainTable">
+					<tr style="width: 1000px;">
+						<td style="width: 500px; position:relative; left:150px;">
+							<button style="color:orange; font-family:Arial" onclick="showTransferTable()"> Make Transfer</button>
+						</td> 
+						<td style="width: 500px; position:relative; left:250px;">
+							<span style="color:orange; font-family:Arial"> Show List Transactions</span>
+							<select id="accountList" name="accountList" onChange="getTransactionList()">
+								<option selected disabled value="">Select Account</option>							
+							</select>
+						</td>
+					</tr>
+				</table>
+
+				<table id="transferTable" style="display:none; position:relative; top:100px;">
+					<tr style="width: 1000px;">
+						<td style="width: 500px; position:relative; left:150px;">
+							<span style="color:orange; font-family:Arial"> Account Origin</span>
+							<select id="accountOrigin" name="accountOrigin" onChange="populateTargetAccount()">
+								<option selected disabled value="">Select Account</option>							
+							</select>
+						</td> 
+						<td style="width: 500px; position:relative; left:250px;">
+							<span style="color:orange; font-family:Arial"> Account Target</span>
+							<select id="accountTarget" name="accountTarget">
+								<option selected disabled value="">Select Account</option>							
+							</select>
+						</td>
+					</tr>
+					<tr></tr><tr></tr><tr></tr><tr></tr><tr></tr><tr></tr><tr></tr>
+					<tr style="width: 1000px; text-align:center;">
+						<td style="width: 500px; position:relative; left:350px">
+							<span style="color:orange; font-family:Arial">Amount</span>
+							<input type="text" id="amountTransfer" name="amountTransfer" value="" />
+						</td>
+					</tr>
+					<tr></tr><tr></tr><tr></tr><tr></tr><tr></tr><tr></tr><tr></tr>
+					<tr style="width: 1000px;">
+						<td style="width: 500px; position:relative; left:570px">
+							<button onClick="makeTransaction()" style="font-family:Arial">Make Transaction</button>
+						</td> 
+					</tr>
+				</table>
+			
+				<table id="transactionTable" style="display:none; position:relative; top:50px;">
+					<tr style="width: 1000px;">
+						<td style="width: 500px; position:relative; left:150px;">
+							<span style="color:orange; font-family:Arial" > Account Balance: </span>
+						</td>
+						<td style="width: 500px; position:relative; left:150px;">
+							<input type="text" style="color:orange; font-family:Arial" id="accountBalance"/> 
+						</td> 
+					</tr >
+					<tr></tr><tr></tr>
+					<tr style="width: 900px; position:relative; left:350px;">
+						<td colspan="2" class="transactionListTableContainer">
+							<div id="typeJtable"></div>
+						</td> 
+				</table>
+			</td>
+		</tr>
+	
+	</table>
+	
+	
+	<script type="text/javascript">
+	var dateTimeFromat = "#DD#/#MM#/#YYYY#";
+	
+	window.onload = function(){
+		
+		populateTransferAccounts();
+	}
+	
+	function showTransferTable(){
+		$('#transferTable').show();
+		$('#transactionTable').hide();
+		populateOriginAccounts();
+		populateTransferAccounts();
+	}
+	
+	function populateTransferAccounts(){
+		
+		// We populate the accounts
+		$.ajax({
+			type: 'GET',
+			url: "rest/Transaction/GetAllMyAccounts",
+			success: function(data){
+				
+				console.log(data);
+				
+				var select = document.getElementById("accountList");
+				select.options.length = 0;
+				select.options[select.options.length] = new Option('Select Account for Transactions', '');
+				$.each(data, function(i, item){
+					select.options[select.options.length] = new Option(item.sortCode + " " + item.accountNumber + "(£ " + item.balance + ")", item.id);
+				})
+			}
+		});
+	}
+	
+	function populateOriginAccounts(){
+		
+		// We populate the accounts
+		$.ajax({
+			type: 'GET',
+			url: "rest/Transaction/GetAllMyAccounts",
+			success: function(data){
+				
+				var select = document.getElementById("accountOrigin");
+				select.options.length = 0;
+				select.options[select.options.length] = new Option('Select Account Origin', '');
+				$.each(data, function(i, item){
+					select.options[select.options.length] = new Option(item.sortCode + " " + item.accountNumber + "(£ " + item.balance + ")", item.id);
+				})
+			}
+		});
+	}
+	
+	function populateTargetAccount(){
+		
+		var originAccount = document.getElementById("accountOrigin").value;
+		
+		$.ajax({
+			type: 'GET',
+			url: "rest/Transaction/GetTargetAccount",
+			data: {'origin' : originAccount},
+			success: function(data){
+				
+				var select = document.getElementById("accountTarget");
+				select.options.length = 0;
+				select.options[select.options.length] = new Option('Select Account Target', '');
+				$.each(data, function(i, item){
+					select.options[select.options.length] = new Option(item.sortCode + " " + item.accountNumber + "(£ " + item.balance + ")", item.id);
+				})
+			}
+		});
+	}
+	
+	function resetParameters(){
+		
+		var select = document.getElementById("accountTarget");
+		select.options.length = 0;
+		select.options[select.options.length] = new Option('Select Account Origin First', '');
+		document.getElementById("amountTransfer").value = '';
+	}
+	
+	function makeTransaction(){
+		
+		var originAccount = document.getElementById("accountOrigin").value;
+		var amountTransfer = document.getElementById("amountTransfer").value;
+		var accountTarget = document.getElementById("accountTarget").value;
+		
+		// We check that the origin account has enough funds to make the transaction
+		$.ajax({
+			type: 'GET',
+			url: "rest/Transaction/GetAccountInformation",
+			data: {'origin' : originAccount},
+			success: function(data){
+				
+				if (amountTransfer <= data.balance ){
+					
+					$.ajax({
+						type: 'POST',
+						url: "rest/Transaction/MakeTransaction",
+						data: {'origin' : originAccount, 'amount' : amountTransfer, 'target' : accountTarget},
+						success: function(data){
+							
+							alert("Transaction made successfully");
+							resetParameters();
+							populateTransferAccounts();
+							
+							$('#transferTable').hide();
+						}
+					});	
+				} else {
+					alert("You don´t have enough funds to make this transaction.")
+				}
+			}
+		});
+	}
+	
+	function getTransactionList(){
+		
+		$('#transactionTable').show();
+		$('#transferTable').hide();
+		
+		var transactionAccount = document.getElementById("accountList").value;
+		console.log(transactionAccount);
+	
+		// We get the information about the information
+		$.ajax({
+			type: 'GET',
+			url: "rest/Transaction/GetAccountInformation",
+			data: {'origin' : transactionAccount},
+			success: function(data){
+				document.getElementById("accountBalance").value = data.balance;
+				obtainTransactionList(data.id);
+			}
+		});
+	}
+	
+	function obtainTransactionList(accountID){
+		
+		$('#typeJtable').jtable({
+			paging:false,
+			title: "Transaction List",
+			ajaxSettings:{
+				type: 'POST',
+				dataType: 'json'
+			},
+			actions:{
+				listAction: 'rest/Transaction/GetAccountTransactionList?acc='+ $('#accountList').val()
+			},
+			fields: {
+				concept: {
+					title: 'Concept',
+					list: true
+				},
+				amount:{
+					title: 'Amount',
+					list: true,
+					display: function(data){
+						var amountValue = data.record.amount;
+						if (transactionAccount == data.record.accountOrigin){
+							amountValue = "-" + amountValue;
+						} else if (transactionAccount == data.record.accoundTarget){
+							amountValue = "+" + amountValue;
+						}
+						return amountValue;
+					}
+				},
+				transactionDate: {
+					title: 'Date',
+					list: true,
+					display: function(data){
+						return new Date(data.record.transactionDate).customFormat(dateTimeFromat);
+					}
+				}
+			}
+		});
+		$('#typeJtable').jtable('load');
+	}
+	
+	</script>
+	
+	
+	</body>
+</html>
